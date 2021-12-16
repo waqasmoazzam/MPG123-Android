@@ -13,7 +13,7 @@ public class MPG123 {
 
     protected static native boolean skipFrame(long handle);
 
-    protected static native int seek(long handle, float offsetInSeconds);
+    protected static native int seek(long handle, float offsetInSeconds, int mode);
 
     protected static native float getPosition(long handle);
 
@@ -30,6 +30,10 @@ public class MPG123 {
     protected static native short[] readFrame(long handle);
 
     protected static native int getSeekFrameOffset(long handle, float position);
+
+    protected static native long getTimeFrame(long handle, double sec);
+
+    protected static native long seekFrame(long handle, float offset, int mode);
 
     private boolean _streamComplete = false;
 
@@ -63,9 +67,34 @@ public class MPG123 {
     public boolean skipFrame() {
         return MPG123.skipFrame(_handle);
     }
-
+    
     public int seek(float offset) {
-        return MPG123.seek(_handle, offset);
+        return seek(offset, SeekMode.SEEK_SET);
+    }
+
+    /**
+     * Seek with modes:
+     * SEEK_SET: set position to (or near to) specified offset
+     * SEEK_CUR: change position by offset from now
+     * SEEK_END: set position to offset from end
+     * https://www.mpg123.de/api/group__mpg123__seek.shtml
+     * @author rosuh@qq.com
+     * @date 2021/8/30
+    */
+    public int seek(float offset, SeekMode mode) {
+        int nativeMode = 0;
+        switch (mode) {
+            case SEEK_CUR:
+                nativeMode = 0;
+                break;
+            case SEEK_SET:
+                nativeMode = 1;
+                break;
+            case SEEK_END:
+                nativeMode = 2;
+                break;
+        }
+        return MPG123.seek(_handle, offset, nativeMode);
     }
 
     public float getPosition() {
@@ -98,5 +127,39 @@ public class MPG123 {
 
     public boolean isStreamComplete() {
         return _streamComplete;
+    }
+
+    /**
+     * Return a MPEG frame offset corresponding to an offset in seconds.
+     * This assumes that the samples per frame do not change in the file/stream,
+     * which is a good assumption for any sane file/stream only.
+     * REF: https://www.mpg123.de/api/group__mpg123__seek.shtml
+     * @author hi@rosuh.me
+     * @since 0.1.2
+    */
+    public long getTimeFrame(double sec) {
+        return MPG123.getTimeFrame(_handle, sec);
+    }
+
+    /**
+     * Seek to a desired MPEG frame offset. Usage is modelled afer the standard lseek().
+     * REF: https://www.mpg123.de/api/group__mpg123__seek.shtml
+     * @author hi@rosuh.me
+     * @since 0.1.2
+    */
+    public long seekFrame(float offset, SeekMode mode) {
+        int nativeMode = 0;
+        switch (mode) {
+            case SEEK_CUR:
+                nativeMode = 0;
+                break;
+            case SEEK_SET:
+                nativeMode = 1;
+                break;
+            case SEEK_END:
+                nativeMode = 2;
+                break;
+        }
+        return MPG123.seekFrame(_handle, offset, nativeMode);
     }
 }
